@@ -1,4 +1,4 @@
-// agent-seatbelt — the PreToolUse hook decision.
+// guardhook — the PreToolUse hook decision.
 //
 // Claude Code (and the Agent SDK) invoke a PreToolUse hook right BEFORE a tool
 // runs, passing a JSON event on stdin. We inspect Bash/Edit/Write calls and
@@ -78,14 +78,14 @@ export function decide(input: HookInput, opts: Options = {}): Decision | null {
         .join("\n");
       return {
         permissionDecision: mode === "ask" ? "ask" : "deny",
-        reason: `agent-seatbelt flagged a destructive command:\n${summary}\n\nCommand: ${command}`,
+        reason: `guardhook flagged a destructive command:\n${summary}\n\nCommand: ${command}`,
       };
     }
     if (risk === "caution") {
       const summary = findings.map((f) => `- ${f.title}: ${f.detail}`).join("\n");
       return {
         permissionDecision: "ask",
-        reason: `agent-seatbelt: this command needs a second look:\n${summary}\n\nCommand: ${command}`,
+        reason: `guardhook: this command needs a second look:\n${summary}\n\nCommand: ${command}`,
       };
     }
     return null;
@@ -104,7 +104,7 @@ export function decide(input: HookInput, opts: Options = {}): Decision | null {
     if (reasons.length) {
       return {
         permissionDecision: "ask",
-        reason: `agent-seatbelt: ${reasons.join("; ")}. Confirm this is intentional and not a leaked credential.`,
+        reason: `guardhook: ${reasons.join("; ")}. Confirm this is intentional and not a leaked credential.`,
       };
     }
   }

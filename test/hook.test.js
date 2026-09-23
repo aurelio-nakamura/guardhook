@@ -89,9 +89,9 @@ test("sensitive path detection", () => {
 
 test("init merges without clobbering and is idempotent", () => {
   const existing = { hooks: { PreToolUse: [{ matcher: "Read", hooks: [{ type: "command", command: "other" }] }] } };
-  const [next, changed] = mergeSettings(existing, "agent-seatbelt hook");
+  const [next, changed] = mergeSettings(existing, "guardhook hook");
   assert.equal(changed, true);
   assert.equal(next.hooks.PreToolUse.length, 2);
-  const [, changed2] = mergeSettings(next, "agent-seatbelt hook");
+  const [, changed2] = mergeSettings(next, "guardhook hook");
   assert.equal(changed2, false);
 });

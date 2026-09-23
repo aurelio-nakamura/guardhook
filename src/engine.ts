@@ -1,4 +1,4 @@
-// agent-seatbelt — command risk engine.
+// guardhook — command risk engine.
 //
 // The destructive-command classification is delegated to cmdxray's offline,
 // zero-network danger engine (the same one that powers cmdxray's explainer,

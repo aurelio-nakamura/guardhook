@@ -1,4 +1,4 @@
-// agent-seatbelt — secret & sensitive-file detection.
+// guardhook — secret & sensitive-file detection.
 //
 // A second guardrail beside the destructive-command engine: stop an agent from
 // hard-coding a live credential into a file, or writing to a file that should

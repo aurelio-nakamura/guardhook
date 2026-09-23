@@ -1,10 +1,10 @@
 {
-  "name": "agent-seatbelt",
+  "name": "guardhook",
   "version": "0.1.0",
   "description": "The seatbelt for coding agents — a Claude Code safety hook that blocks destructive commands (rm -rf /, curl | sudo bash, force-push, dd to disk) and credential leaks before they run. Offline, zero-config.",
   "type": "module",
   "bin": {
-    "agent-seatbelt": "dist/cli.js"
+    "guardhook": "dist/cli.js"
   },
   "exports": {
     ".": "./dist/index.js"
@@ -36,13 +36,13 @@
   ],
   "author": "Aurelio Nakamura",
   "license": "MIT",
-  "homepage": "https://github.com/aurelio-nakamura/agent-seatbelt",
+  "homepage": "https://github.com/aurelio-nakamura/guardhook",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aurelio-nakamura/agent-seatbelt.git"
+    "url": "git+https://github.com/aurelio-nakamura/guardhook.git"
   },
   "bugs": {
-    "url": "https://github.com/aurelio-nakamura/agent-seatbelt/issues"
+    "url": "https://github.com/aurelio-nakamura/guardhook/issues"
   },
   "engines": {
     "node": ">=18"

@@ -1,8 +1,8 @@
-// agent-seatbelt — `init`: install the guard into Claude Code settings.
+// guardhook — `init`: install the guard into Claude Code settings.
 //
 // Merges a PreToolUse hook into .claude/settings.json (project) or
 // ~/.claude/settings.json (--global) without clobbering existing hooks. Safe to
-// re-run: it will not add a duplicate agent-seatbelt entry.
+// re-run: it will not add a duplicate guardhook entry.
 
 import { promises as fs } from "node:fs";
 import * as path from "node:path";
@@ -10,15 +10,15 @@ import * as os from "node:os";
 
 export interface InitOptions {
   global?: boolean;
-  npx?: boolean; // use `npx -y agent-seatbelt hook` instead of a bare binary
+  npx?: boolean; // use `npx -y guardhook hook` instead of a bare binary
   mode?: "block" | "ask";
   cwd?: string;
 }
 
-const MARK = "agent-seatbelt";
+const MARK = "guardhook";
 
 export function hookCommand(opts: InitOptions): string {
-  const base = opts.npx ? "npx -y agent-seatbelt hook" : "agent-seatbelt hook";
+  const base = opts.npx ? "npx -y guardhook hook" : "guardhook hook";
   return opts.mode === "ask" ? `${base} --mode ask` : base;
 }
 

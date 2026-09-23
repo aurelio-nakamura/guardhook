@@ -1,4 +1,4 @@
-// agent-seatbelt — public API.
+// guardhook — public API.
 export { classifyCommand } from "./engine.js";
 export type { Risk, Finding, Classification } from "./engine.js";
 export { decide, toHookOutput, runHook } from "./hook.js";
