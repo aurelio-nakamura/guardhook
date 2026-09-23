@@ -1,6 +1,6 @@
 {
   "name": "guardhook",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The seatbelt for coding agents — a Claude Code safety hook that blocks destructive commands (rm -rf /, curl | sudo bash, force-push, dd to disk) and credential leaks before they run. Offline, zero-config.",
   "type": "module",
   "bin": {

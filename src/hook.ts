@@ -11,6 +11,7 @@
 // that breaks the agent on its own bugs is worse than no guard.
 
 import { classifyCommand } from "./engine.js";
+import { gate } from "./tiers.js";
 import { scanSecrets, isSensitivePath } from "./secrets.js";
 
 export type Behavior = "deny" | "ask" | "allow";
@@ -70,25 +71,19 @@ export function decide(input: HookInput, opts: Options = {}): Decision | null {
   if (BASH_TOOLS.has(tool)) {
     const command = typeof ti.command === "string" ? ti.command : "";
     if (!command.trim()) return null;
-    const { risk, findings } = classifyCommand(command);
-    if (risk === "danger") {
-      const summary = findings
-        .filter((f) => f.level === "danger")
-        .map((f) => `- ${f.title}: ${f.detail}`)
-        .join("\n");
+    const { gate: g, reasons } = gate(classifyCommand(command));
+    if (!g) return null;
+    const summary = reasons.map((f) => `- ${f.title}: ${f.detail}`).join("\n");
+    if (g === "deny") {
       return {
         permissionDecision: mode === "ask" ? "ask" : "deny",
-        reason: `guardhook flagged a destructive command:\n${summary}\n\nCommand: ${command}`,
+        reason: `guardhook blocked a destructive command:\n${summary}\n\nCommand: ${command}`,
       };
     }
-    if (risk === "caution") {
-      const summary = findings.map((f) => `- ${f.title}: ${f.detail}`).join("\n");
-      return {
-        permissionDecision: "ask",
-        reason: `guardhook: this command needs a second look:\n${summary}\n\nCommand: ${command}`,
-      };
-    }
-    return null;
+    return {
+      permissionDecision: "ask",
+      reason: `guardhook: this command is risky — confirm before running:\n${summary}\n\nCommand: ${command}`,
+    };
   }
 
   if (EDIT_TOOLS.has(tool)) {

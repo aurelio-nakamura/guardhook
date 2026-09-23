@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { decide } from "../dist/hook.js";
 import { classifyCommand } from "../dist/engine.js";
+import { gate } from "../dist/tiers.js";
 import { scanSecrets, isSensitivePath } from "../dist/secrets.js";
 import { mergeSettings } from "../dist/init.js";
 
@@ -20,10 +21,22 @@ test("blocks curl | sudo bash", () => {
   assert.equal(d.permissionDecision, "deny");
 });
 
-test("blocks git force-push", () => {
-  const d = decide(bash("git push --force origin main"));
-  assert.ok(d);
-  assert.ok(d.permissionDecision === "deny" || d.permissionDecision === "ask");
+test("blocks disk-destroying and fork-bomb commands", () => {
+  assert.equal(decide(bash("dd if=/dev/zero of=/dev/sda")).permissionDecision, "deny");
+  assert.equal(decide(bash("mkfs.ext4 /dev/nvme0n1")).permissionDecision, "deny");
+  assert.equal(decide(bash(":(){ :|:& };:")).permissionDecision, "deny");
+});
+
+test("asks (not denies) on force-push and hard reset", () => {
+  assert.equal(decide(bash("git push --force origin main")).permissionDecision, "ask");
+  assert.equal(decide(bash("git reset --hard")).permissionDecision, "ask");
+});
+
+test("PRECISION: allows routine rm -rf of project dirs (no nagging)", () => {
+  // The #1 reason safety tools get uninstalled: blocking everyday commands.
+  assert.equal(decide(bash("rm -rf node_modules")), null);
+  assert.equal(decide(bash("rm -rf dist")), null);
+  assert.equal(decide(bash("rm -rf ./build")), null);
 });
 
 test("stays silent on an ordinary command", () => {
@@ -72,6 +85,13 @@ test("ordinary edits stay silent", () => {
 test("engine classifies risk levels", () => {
   assert.equal(classifyCommand("rm -rf /").risk, "danger");
   assert.equal(classifyCommand("ls").risk, "none");
+});
+
+test("gate tiers: catastrophic deny, routine allow", () => {
+  assert.equal(gate(classifyCommand("rm -rf /")).gate, "deny");
+  assert.equal(gate(classifyCommand("rm -rf node_modules")).gate, null);
+  assert.equal(gate(classifyCommand("git push --force")).gate, "ask");
+  assert.equal(gate(classifyCommand("ls")).gate, null);
 });
 
 test("secret scanner is precise", () => {

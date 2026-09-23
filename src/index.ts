@@ -1,5 +1,7 @@
 // guardhook — public API.
 export { classifyCommand } from "./engine.js";
+export { gate } from "./tiers.js";
+export type { Gate } from "./tiers.js";
 export type { Risk, Finding, Classification } from "./engine.js";
 export { decide, toHookOutput, runHook } from "./hook.js";
 export type { HookInput, Decision, Behavior, Options } from "./hook.js";

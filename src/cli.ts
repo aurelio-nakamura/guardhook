@@ -3,6 +3,7 @@
 
 import { runHook } from "./hook.js";
 import { classifyCommand } from "./engine.js";
+import { gate } from "./tiers.js";
 import { runInit } from "./init.js";
 import { createRequire } from "node:module";
 
@@ -90,11 +91,11 @@ async function main(): Promise<number> {
       process.stderr.write('Usage: guardhook check "<command>"\n');
       return 2;
     }
-    const { risk, findings } = classifyCommand(command);
-    const icon = risk === "danger" ? "⛔" : risk === "caution" ? "⚠️ " : "✅";
-    process.stdout.write(`${icon} ${risk.toUpperCase()}  ${command}\n`);
-    for (const f of findings) process.stdout.write(`   - ${f.title}: ${f.detail}\n`);
-    return risk === "danger" ? 1 : 0;
+    const { gate: g, reasons } = gate(classifyCommand(command));
+    const label = g === "deny" ? "⛔ DENY " : g === "ask" ? "⚠️  ASK " : "✅ ALLOW";
+    process.stdout.write(`${label}  ${command}\n`);
+    for (const f of reasons) process.stdout.write(`   - ${f.title}: ${f.detail}\n`);
+    return g === "deny" ? 1 : 0;
   }
 
   process.stderr.write(`Unknown command: ${cmd}\n\n${HELP}`);

