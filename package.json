@@ -1,0 +1,57 @@
+{
+  "name": "agent-seatbelt",
+  "version": "0.1.0",
+  "description": "The seatbelt for coding agents — a Claude Code safety hook that blocks destructive commands (rm -rf /, curl | sudo bash, force-push, dd to disk) and credential leaks before they run. Offline, zero-config.",
+  "type": "module",
+  "bin": {
+    "agent-seatbelt": "dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "hooks",
+    "ai-agent",
+    "coding-agent",
+    "agent-safety",
+    "guardrails",
+    "safety",
+    "security",
+    "pretooluse",
+    "shell",
+    "destructive-commands",
+    "agent-sdk"
+  ],
+  "author": "Aurelio Nakamura",
+  "license": "MIT",
+  "homepage": "https://github.com/aurelio-nakamura/agent-seatbelt",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aurelio-nakamura/agent-seatbelt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aurelio-nakamura/agent-seatbelt/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cmdxray": "^0.27.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0"
+  }
+}
