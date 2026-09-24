@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // guardhook — CLI entrypoint.
 
-import { runHook } from "./hook.js";
+import { runHook, decide } from "./hook.js";
 import { classifyCommand } from "./engine.js";
 import { gate } from "./tiers.js";
 import { runInit } from "./init.js";
+import { loadConfig } from "./config.js";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
@@ -91,11 +92,20 @@ async function main(): Promise<number> {
       process.stderr.write('Usage: guardhook check "<command>"\n');
       return 2;
     }
-    const { gate: g, reasons } = gate(classifyCommand(command));
-    const label = g === "deny" ? "⛔ DENY " : g === "ask" ? "⚠️  ASK " : "✅ ALLOW";
+    // Honor .guardhook.json so users can test their own allow/deny/ask rules.
+    const config = loadConfig();
+    const d = decide(
+      { hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command } },
+      { mode: parseMode(args), config },
+    );
+    const behavior = d?.permissionDecision ?? "allow";
+    const label = behavior === "deny" ? "⛔ DENY " : behavior === "ask" ? "⚠️  ASK " : "✅ ALLOW";
     process.stdout.write(`${label}  ${command}\n`);
-    for (const f of reasons) process.stdout.write(`   - ${f.title}: ${f.detail}\n`);
-    return g === "deny" ? 1 : 0;
+    if (behavior !== "allow") {
+      const { reasons } = gate(classifyCommand(command));
+      for (const f of reasons) process.stdout.write(`   - ${f.title}: ${f.detail}\n`);
+    }
+    return behavior === "deny" ? 1 : 0;
   }
 
   process.stderr.write(`Unknown command: ${cmd}\n\n${HELP}`);

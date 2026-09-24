@@ -80,6 +80,35 @@ guardhook init --mode ask # confirm dangerous commands instead of hard-blocking 
 
 Prefer a global binary instead of `npx`? `npm i -g guardhook` then `guardhook init` (drop `--npx`).
 
+## Tuning it — `.guardhook.json`
+
+A safety gate you can't tune gets uninstalled. Drop a `.guardhook.json` in your
+project root (guardhook walks up from the working directory to find it) to add
+your own rules. Every field is optional:
+
+```jsonc
+{
+  "mode": "block",                      // "block" (default) | "ask"
+  "deny":  ["kubectl .*delete namespace prod"], // regex on the command → deny
+  "ask":   ["^git push .*origin main"],         // regex on the command → ask
+  "allow": ["^terraform destroy$"],             // regex → allow (escape hatch)
+  "allowTitles": ["Force-push"],                // silence a built-in rule by name
+  "sensitivePaths": ["\\.tfstate$"]             // extra files to guard on Write/Edit
+}
+```
+
+Precedence for a shell command is **your deny → your allow → your ask →
+built-in**. So a `deny` rule escalates something guardhook would have let
+through, and an `allow` rule is a deliberate escape hatch that can override a
+built-in block (a tie between your `deny` and `allow` resolves to deny —
+safety first). Test any rule without running it:
+
+```bash
+guardhook check "terraform destroy"   # ⛔ DENY / ⚠️ ASK / ✅ ALLOW, honoring your config
+```
+
+A missing or malformed config is ignored (fail-open), never breaking your agent.
+
 ## Works with
 
 - **Claude Code** — via `.claude/settings.json` hooks (shown above).

@@ -115,3 +115,56 @@ test("init merges without clobbering and is idempotent", () => {
   const [, changed2] = mergeSettings(next, "guardhook hook");
   assert.equal(changed2, false);
 });
+
+// ---- project config (.guardhook.json) overrides ----------------------------
+import { fromRaw } from "../dist/config.js";
+
+function bashCfg(command, raw) {
+  return decide(bash(command), { config: fromRaw(raw) });
+}
+
+test("config deny escalates a normally-allowed command", () => {
+  const d = bashCfg("kubectl delete namespace prod", { deny: ["delete namespace prod"] });
+  assert.equal(d.permissionDecision, "deny");
+  assert.match(d.reason, /project deny rule/i);
+});
+
+test("config allow is an escape hatch overriding a built-in deny", () => {
+  // rm -rf / is a built-in deny; an explicit allow rule silences it.
+  assert.equal(decide(bash("rm -rf /")).permissionDecision, "deny");
+  assert.equal(bashCfg("rm -rf /", { allow: ["^rm -rf /$"] }), null);
+});
+
+test("config deny beats config allow on a tie (safety-first)", () => {
+  const d = bashCfg("terraform destroy", { allow: ["terraform"], deny: ["terraform destroy"] });
+  assert.equal(d.permissionDecision, "deny");
+});
+
+test("config ask prompts on an otherwise-allowed command", () => {
+  const d = bashCfg("git push origin main", { ask: ["git push .* main"] });
+  assert.equal(d.permissionDecision, "ask");
+  assert.match(d.reason, /project ask rule/i);
+});
+
+test("config allowTitles silences a built-in rule by title", () => {
+  assert.equal(decide(bash("git push --force origin main")).permissionDecision, "ask");
+  assert.equal(bashCfg("git push --force origin main", { allowTitles: ["Force-push"] }), null);
+});
+
+test("config sensitivePaths guards extra Write targets", () => {
+  const write = (p) => ({ hook_event_name: "PreToolUse", tool_name: "Write", tool_input: { file_path: p, content: "x" } });
+  assert.equal(decide(write("infra/state.tfstate")), null);
+  const d = decide(write("infra/state.tfstate"), { config: fromRaw({ sensitivePaths: ["\\.tfstate$"] }) });
+  assert.equal(d.permissionDecision, "ask");
+});
+
+test("config mode:ask downgrades built-in denies to ask", () => {
+  const d = bashCfg("rm -rf /", { mode: "ask" });
+  assert.equal(d.permissionDecision, "ask");
+});
+
+test("malformed config regex is skipped, not fatal", () => {
+  // an invalid pattern should be dropped; the rest still work
+  const d = bashCfg("kubectl delete ns prod", { deny: ["(", "delete ns"] });
+  assert.equal(d.permissionDecision, "deny");
+});

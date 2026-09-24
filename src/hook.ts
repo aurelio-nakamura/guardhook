@@ -13,6 +13,7 @@
 import { classifyCommand } from "./engine.js";
 import { gate } from "./tiers.js";
 import { scanSecrets, isSensitivePath } from "./secrets.js";
+import { EMPTY_CONFIG, loadConfig, type Config } from "./config.js";
 
 export type Behavior = "deny" | "ask" | "allow";
 
@@ -25,7 +26,15 @@ export interface HookInput {
 export interface Options {
   // What to do with a genuinely-destructive command. "block" -> deny,
   // "ask" -> prompt for confirmation. Cautions always ask. Default: block.
+  // A `mode` in the project config takes precedence over this.
   mode?: "block" | "ask";
+  // Project overrides from `.guardhook.json` (allow/deny/ask rules, extra
+  // sensitive paths). Defaults to no overrides.
+  config?: Config;
+}
+
+function firstMatch(res: RegExp[], text: string): boolean {
+  return res.some((re) => re.test(text));
 }
 
 export interface Decision {
@@ -66,13 +75,34 @@ export function decide(input: HookInput, opts: Options = {}): Decision | null {
   if (input.hook_event_name && input.hook_event_name !== "PreToolUse") return null;
   const tool = input.tool_name ?? "";
   const ti = (input.tool_input ?? {}) as Record<string, unknown>;
-  const mode = opts.mode ?? "block";
+  const cfg = opts.config ?? EMPTY_CONFIG;
+  const mode = cfg.mode ?? opts.mode ?? "block";
 
   if (BASH_TOOLS.has(tool)) {
     const command = typeof ti.command === "string" ? ti.command : "";
     if (!command.trim()) return null;
-    const { gate: g, reasons } = gate(classifyCommand(command));
-    if (!g) return null;
+
+    // User overrides win, in safety-first order: deny > allow > ask > built-in.
+    if (firstMatch(cfg.deny, command)) {
+      return {
+        permissionDecision: mode === "ask" ? "ask" : "deny",
+        reason: `guardhook blocked a command matching a project deny rule (.guardhook.json):\n\nCommand: ${command}`,
+      };
+    }
+    if (firstMatch(cfg.allow, command)) return null; // explicit escape hatch
+    if (firstMatch(cfg.ask, command)) {
+      return {
+        permissionDecision: "ask",
+        reason: `guardhook: this command matches a project ask rule (.guardhook.json) — confirm before running:\n\nCommand: ${command}`,
+      };
+    }
+
+    const { gate: g, reasons: allReasons } = gate(classifyCommand(command));
+    // Let the project silence specific built-in rules by title.
+    const reasons = cfg.allowTitles.size
+      ? allReasons.filter((f) => !cfg.allowTitles.has(f.title))
+      : allReasons;
+    if (!g || reasons.length === 0) return null;
     const summary = reasons.map((f) => `- ${f.title}: ${f.detail}`).join("\n");
     if (g === "deny") {
       return {
@@ -89,7 +119,7 @@ export function decide(input: HookInput, opts: Options = {}): Decision | null {
   if (EDIT_TOOLS.has(tool)) {
     const fp = filePathOf(ti);
     const reasons: string[] = [];
-    if (isSensitivePath(fp)) {
+    if (isSensitivePath(fp) || (fp && firstMatch(cfg.sensitivePaths, fp))) {
       reasons.push(`writing to a sensitive file (${fp})`);
     }
     const hits = scanSecrets(textFromEditInput(ti));
@@ -124,7 +154,9 @@ export async function runHook(stdin: NodeJS.ReadableStream, stdout: NodeJS.Writa
   try {
     for await (const chunk of stdin) raw += chunk;
     const input = JSON.parse(raw) as HookInput;
-    const decision = decide(input, opts);
+    // Load project config lazily so a broken/missing file never blocks startup.
+    const config = opts.config ?? loadConfig();
+    const decision = decide(input, { ...opts, config });
     if (decision) stdout.write(toHookOutput(decision));
   } catch {
     // fail-open: stay silent

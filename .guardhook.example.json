@@ -1,0 +1,8 @@
+{
+  "mode": "block",
+  "deny": ["kubectl .*delete namespace prod"],
+  "ask": ["^git push .*origin main"],
+  "allow": ["^terraform destroy$"],
+  "allowTitles": ["Force-push"],
+  "sensitivePaths": ["\\.tfstate$"]
+}
